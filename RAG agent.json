@@ -1,0 +1,388 @@
+{
+  "name": "RAG agent",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "1rM4M-kZ5F48zfag8hY36O4BUu28bx_OM",
+          "mode": "list",
+          "cachedResultName": "RAG documents",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1rM4M-kZ5F48zfag8hY36O4BUu28bx_OM"
+        },
+        "event": "fileCreated",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [
+        -496,
+        0
+      ],
+      "id": "16767f9b-37bf-4a7d-b042-1f9a00b35cb1",
+      "name": "Google Drive Trigger",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "7iuJWuG7pr6lVmSW",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -288,
+        0
+      ],
+      "id": "58796bc8-de45-4947-8e70-c6a5bf4a9f8e",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "7iuJWuG7pr6lVmSW",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "memoryKey": {
+          "__rl": true,
+          "value": "document_rag",
+          "mode": "list"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1.3,
+      "position": [
+        16,
+        -48
+      ],
+      "id": "b598c6f2-8acf-4afa-aed8-c040dc60b47e",
+      "name": "Simple Vector Store"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -128,
+        208
+      ],
+      "id": "a2e2b798-e7a9-4ac2-a7e8-9d7ff77a083c",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "6KLlmP8ANhGlsfqP",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "textSplittingMode": "custom",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "file_name",
+                "value": "=={{ $('Google Drive Trigger').item.json.name }}"
+              },
+              {
+                "name": "file_id",
+                "value": "=={{ $('Google Drive Trigger').item.json.id }}"
+              },
+              {
+                "name": "loaded_at",
+                "value": "=={{ $now.toISO() }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        192
+      ],
+      "id": "014ea635-24df-47e0-9c25-35d57fd6518d",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "chunkOverlap": 200,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        96,
+        288
+      ],
+      "id": "8a2a529f-e304-4f98-87a0-760e2e15d8ed",
+      "name": "Recursive Character Text Splitter"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "gpt-4o"
+        },
+        "builtInTools": {},
+        "options": {
+          "temperature": 0.1
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        816,
+        256
+      ],
+      "id": "ec096109-2153-4c1e-947d-e229aa534da8",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "6KLlmP8ANhGlsfqP",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        992,
+        272
+      ],
+      "id": "4a01ed24-adba-41f3-90e1-73b14210f875",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1136,
+        512
+      ],
+      "id": "d45a315f-036b-4754-9afb-f154e3c20a94",
+      "name": "Embeddings OpenAI1",
+      "credentials": {
+        "openAiApi": {
+          "id": "6KLlmP8ANhGlsfqP",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        624,
+        160
+      ],
+      "id": "e2641da5-1c47-4bfa-9e66-7571b8960dbc",
+      "name": "When chat message received",
+      "webhookId": "e9e55fbd-e4e3-4942-8f6b-a79a7dcb4cf9"
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Semantic search over the documents the user has uploaded to the knowledge base. The input should be a complete, standalone question or a descriptive phrase about the information you need - not a single keyword. Returns the passages whose meaning is closest to your query, along with the name of the file each passage came from. Use this tool for every question about document content.",
+        "memoryKey": {
+          "__rl": true,
+          "value": "document_rag",
+          "mode": "list",
+          "cachedResultName": "document_rag"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1.3,
+      "position": [
+        1120,
+        272
+      ],
+      "id": "36174724-763f-4906-acac-b2d1f406ae27",
+      "name": "Simple Vector Store1"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "You are a Document Q&A Assistant. You answer questions using ONLY the content of the documents that have been loaded into the knowledge base. ** Your tool ** You have one tool: document_knowledge_base It runs a semantic search over the uploaded documents and returns the passages that are closest in meaning to your query, plus the file name each came from. ** Rules you must follow ** 1. Search before you answer.   Call the tool on every question about document content, even when you think   you already know the answer. 2. Ground every claim.   State only facts that appear in the returned passages. Never fill a gap from   your own general knowledge, and never infer a number that is not written down. 3. Admit what is missing.   If the passages do not contain the answer, reply with exactly this sentence:   \"I could not find that in the uploaded documents.\"   Then suggest a question the documents could answer. Do not guess. 4. Paraphrase, do not copy.   Put the answer in your own words. Use a short direct quote only when the   exact wording matters, and keep it under one sentence. 5. Cite your source.   Finish every grounded answer with a line in this exact form:   Source: <file_name>   Take file_name from the metadata attached to the passages you used. If you   used more than one file, list them separated by commas. 6. Rewrite vague follow-ups.   The tool has no memory of the conversation. Before calling it, turn pronouns   and shorthand into a standalone query using the chat history. \"What about the   second one?\" must become a full question naming the thing. 7. Split multi-part questions.   If a question needs several unrelated facts, call the tool more than once   with different phrasings rather than one broad query. ** Style ** Answer in two to six sentences unless the user asks for more detail. Use a short bullet list when presenting parallel items. Be direct: do not open with \"Based on the documents provided\" or \"According to the context\"."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        944,
+        -80
+      ],
+      "id": "71350026-e113-40c0-b13d-abdbbe543808",
+      "name": "AI Agent"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Drive Trigger": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Simple Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Simple Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Simple Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Vector Store": {
+      "main": [
+        []
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Vector Store1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Simple Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "71ae0087-92db-4825-baff-fd3846132056",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "92031c4153f20ec07ed2901c71d9318fcb6555313a12d138a2ad454944335930"
+  },
+  "nodeGroups": [],
+  "id": "tspxtXi7KUfG8G3S",
+  "tags": []
+}
